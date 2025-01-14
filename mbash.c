@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include <ctype.h>
+#define MAXLI 2048
 
 #define MAX_TOKENS 128
 #define MAX_TOKEN_LENGTH 256
@@ -32,6 +33,9 @@ typedef struct {
 
 void parse_line(const char *line, ParsedCommand commands[], int *num_commands);
 int execute_command(ParsedCommand *cmd);
+void history();
+void save_history(ParsedCommand *cmd);
+void clear_history();
 
 int main() {
     char line[1024];
@@ -221,12 +225,43 @@ void history() {
     }
 
     // Lire et afficher chaque ligne du fichier
-    char line[1024];
+    char line[MAXLI];
     while (fgets(line, MAXLI, file) != NULL) {
         printf("- %s", line); // Afficher chaque ligne lue
     }
 
     // Fermer le fichier
+    fclose(file);
+
+}
+
+void save_history(ParsedCommand *cmd) {
+    // Ouvrir le fichier en mode ajout
+    FILE* file = fopen("history.txt", "a");
+
+    // Si l'utilisateur n'as pas juste appuyé sur entrer
+    if (strcmp("\n", cmd->command) != 0 && strcmp("", cmd->command) != 0) {
+        char* strArgs = "";
+        for (int i = 0; cmd->args[i] != NULL; i++) {
+            strArgs = strcat(strArgs, cmd->args[i]);
+            strArgs = strcat(strArgs, " ");
+        }
+        // Écrire la commande dans le fichier
+        fprintf(file, "%s %s", cmd->command, strArgs);
+    }
+
+    fclose(file);
+
+}
+
+void clear_history() {
+
+    FILE* file = fopen("history.txt", "w");
+    if (file != NULL) {
+        remove("history.txt");
+        history();
+    }
+
     fclose(file);
 
 }
