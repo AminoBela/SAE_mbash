@@ -12,7 +12,7 @@ void mbash();
 
 int main(int argc, char** argv) {
   while (1) {
-    printf("Commande: ");
+    printf("> ");
     fgets(cmd, MAXLI, stdin);
     mbash(cmd);
   }
@@ -20,6 +20,5 @@ int main(int argc, char** argv) {
 }
 
 void mbash() {
-  printf("Execute: %s", cmd);
   system(cmd);
 }
