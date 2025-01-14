@@ -167,6 +167,8 @@ int execute_command(ParsedCommand *cmd) {
         return -1; // Commande invalide
     }
 
+    save_history(cmd);
+
     // Gestion des commandes internes
     if (strcmp(cmd->command, "cd") == 0) {
         if (cmd->args[1] == NULL) {
@@ -182,7 +184,6 @@ int execute_command(ParsedCommand *cmd) {
 
     if (strcmp(cmd->command, "history") == 0) {
         if (cmd->args[1] == NULL) {
-            save_history(cmd);
             history();
         }
         if (cmd->args[1] != NULL) {
@@ -243,8 +244,9 @@ void save_history(ParsedCommand *cmd) {
     // Si l'utilisateur n'as pas juste appuyé sur entrer
     if (strcmp("\n", cmd->command) != 0 && strcmp("", cmd->command) != 0) {
         char* strArgs = "";
+
         // Écrire la commande dans le fichier
-        fprintf(file, "%s %s", cmd->command, strArgs);
+        fprintf(file, "%s %s\n", cmd->command, strArgs);
     }
 
     fclose(file);
