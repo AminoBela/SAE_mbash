@@ -255,11 +255,10 @@ int execute_command(ParsedCommand *cmd) {
             history();
         }
         // Effacer l'historique dans le cas de la commande history -c
-        if (cmd->args[1] != NULL) {
-            if (strcmp(cmd->args[1], "-c") == 0) {
-                clear_history();
-            }
+        else if (strcmp(cmd->args[1], "-c") == 0) {
+            clear_history();
         }
+        return 0;
     }
 
     // Commande exit
@@ -317,6 +316,10 @@ void history() {
 void save_history(ParsedCommand *cmd) {
     // Ouvrir le fichier en mode ajout
     FILE* file = fopen("history.txt", "a");
+    if (file == NULL) {
+        perror("Erreur d'ouverture du fichier");
+        return;
+    }
 
     // Si l'utilisateur n'as pas juste appuyé sur entrer
     if (strcmp("\n", cmd->command) != 0 && strcmp("", cmd->command) != 0) {
