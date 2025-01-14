@@ -10,42 +10,84 @@ char path[MAXLI];
 int pathidx;
 void mbash();
 
-char* historique[20];
-int size = 0;
-
-
-void history() {
-
-  for (int i = 0; i < size; i++) {
-    printf(": %s\n", historique[i]);
-  }
-
-}
+void history();
+void save_history();
+void clear_history();
 
 
 int main(int argc, char** argv) {
+
   while (1) {
-    printf("Commande: ");
+
+    printf(">");
     fgets(cmd, MAXLI, stdin);
-    if (strcmp(cmd, "history") == 0) {
-      history();
-    }
+    strcpy(cmd, cmd);
+
     mbash(cmd);
+
   }
   return 0;
+
 }
 
 void mbash() {
 
-  // Ajout de la commande dans l'historique
-  if (size < 20) {
-
-    historique[size] = strdup(cmd);
-    size++;
-
+  if (strcmp(cmd, "history\n") == 0) {
+    save_history(cmd);
+    history();
   }
 
-  printf("Execute: %s", cmd);
-  system(cmd);
+  else if (strcmp(cmd, "history -c\n") == 0) {
+    clear_history();
+  }
 
+  else {
+    save_history(cmd);
+    system(cmd);
+  }
+
+}
+
+
+void history() {
+
+  // Ouvrir le fichier historique.txt en mode lecture
+  FILE *file = fopen("history.txt", "r");
+  if (file == NULL) {
+    perror("Erreur d'ouverture du fichier");
+    return;
+  }
+
+  // Lire et afficher chaque ligne du fichier
+  char line[MAXLI];
+  while (fgets(line, MAXLI, file) != NULL) {
+    printf("- %s", line); // Afficher chaque ligne lue
+  }
+
+  // Fermer le fichier
+  fclose(file);
+
+}
+
+void save_history() {
+  // Ouvrir le fichier en mode ajout
+  FILE* file = fopen("history.txt", "a");
+
+  // Si l'utilisateur n'as pas juste appuyé sur entrer
+  if (strcmp("\n", cmd) != 0 && strcmp("", cmd) != 0) {
+    // Écrire la commande dans le fichier
+    fprintf(file, "%s", cmd);
+  }
+
+  fclose(file);
+
+}
+
+void clear_history() {
+
+  FILE* file = fopen("history.txt", "w");
+  if (file != NULL) {
+    remove("history.txt");
+    history();
+  }
 }
