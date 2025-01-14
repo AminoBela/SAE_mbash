@@ -176,6 +176,17 @@ int execute_command(ParsedCommand *cmd) {
         return 0;
     }
 
+    if (strcmp(cmd->command, "history") == 0) {
+        if (cmd->args[1] == NULL) {
+            history();
+        }
+        if (cmd->args[1] != NULL) {
+            if (strcmp(cmd->args[1], "-c") == 0) {
+                clear_history();
+            }
+        }
+    }
+
     if (strcmp(cmd->command, "exit") == 0) {
         exit(0); // Quitter le shell
     }
@@ -198,6 +209,24 @@ int execute_command(ParsedCommand *cmd) {
 
   }
 
-
 }
 
+void history() {
+
+    // Ouvrir le fichier historique.txt en mode lecture
+    FILE* file = fopen("history.txt", "r");
+    if (file == NULL) {
+        perror("Erreur d'ouverture du fichier");
+        return;
+    }
+
+    // Lire et afficher chaque ligne du fichier
+    char line[1024];
+    while (fgets(line, MAXLI, file) != NULL) {
+        printf("- %s", line); // Afficher chaque ligne lue
+    }
+
+    // Fermer le fichier
+    fclose(file);
+
+}
