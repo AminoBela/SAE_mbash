@@ -182,6 +182,7 @@ int execute_command(ParsedCommand *cmd) {
 
     if (strcmp(cmd->command, "history") == 0) {
         if (cmd->args[1] == NULL) {
+            save_history(cmd);
             history();
         }
         if (cmd->args[1] != NULL) {
