@@ -1,0 +1,6 @@
+pwd 
+pwd 
+echo 
+history 
+git 
+git 
