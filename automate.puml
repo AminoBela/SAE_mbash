@@ -1,0 +1,32 @@
+@startuml
+
+[*] --> START
+
+START --> COMMAND : non-espace trouvé
+START --> START : espace trouvé
+START --> STATE_QUOTE : '"' trouvé
+START --> ERROR : fin de ligne avec syntaxe incorrecte
+
+COMMAND --> ARGUMENT : espace ou argument suivant trouvé
+COMMAND --> OPERATOR : opérateur logique (;, &&, ||) trouvé
+COMMAND --> STATE_QUOTE : '"' trouvé
+COMMAND --> END : fin de ligne
+COMMAND --> ERROR : syntaxe incorrecte
+
+ARGUMENT --> ARGUMENT : argument suivant trouvé
+ARGUMENT --> OPERATOR : opérateur logique (;, &&, ||) trouvé
+ARGUMENT --> STATE_QUOTE : '"' trouvé
+ARGUMENT --> END : fin de ligne
+ARGUMENT --> ERROR : syntaxe incorrecte
+
+STATE_QUOTE --> STATE_QUOTE : caractère trouvé entre guillemets
+STATE_QUOTE --> ARGUMENT : '"' fermant trouvé
+STATE_QUOTE --> ERROR : fin de ligne sans fermeture des guillemets (gérer continuation)
+
+OPERATOR --> START : nouvelle commande après opérateur
+OPERATOR --> ERROR : syntaxe incorrecte après opérateur
+
+END --> [*] : ligne terminée
+ERROR --> [*] : arrêt dû à une erreur
+
+@enduml

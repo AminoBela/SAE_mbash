@@ -1,13 +1,33 @@
-history 
-!3[A[A[A[A[A[A[A[A[A[A 
-open 
-open 
+ls 
+pwd 
+ls 
+pwd 
+echo "hello" 
+echo "test" 
+& 
+echo "test 
+& 
+" 
+ls 
+; ls 
+ls -l 
+ls 
+echo 
+echo 
+echo "hello" 
+echo "hello 
+a=b 
+echo "hello" 
+echo "hello 
+echo "hello 
+echo "hello" 
+echo "hello 
+echo "hello 
+ls 
+ls 
+ls 
+ls 
 clear 
-ls 
-ls 
-ls 
-ls 
-ls 
-;ls 
-git 
-git 
+exit 
+echo hello 
+echo hello || && 

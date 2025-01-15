@@ -22,6 +22,7 @@ typedef enum {
     START,
     COMMAND,
     ARGUMENT,
+    STATE_QUOTE,
     OPERATOR,
     END,
     ERROR
@@ -128,94 +129,120 @@ void parse_line(const char *line, ParsedCommand commands[], int *num_commands) {
     for (int i = 0; i <= strlen(line); i++) {
         char c = line[i];
 
+
         switch (state) {
-        case START:
-            if (!isspace(c)) { // Si on trouve une commande ou un argument
-                state = COMMAND;
-                token[token_idx++] = c; // Commencer à stocker le token
-                cmd_idx++; // Nouvelle commande
-                arg_idx = 0; // Réinitialiser l'index des arguments
-                commands[cmd_idx].next_operator = NONE; // Par défaut
-            }
-            break;
-
-        case COMMAND:
-            if (isspace(c) || c == '\0' || c == ';' || c == '&' || c == '|') {
-                if (token_idx > 0) { // Fin du nom de la commande
-                    token[token_idx] = '\0'; // Terminer le token
-                    commands[cmd_idx].command = strdup(token); // Enregistrer la commande
-                    commands[cmd_idx].args[arg_idx++] = strdup(token); // Ajouter comme premier argument
-                    token_idx = 0; // Réinitialiser l'index du token
+            case START:
+                if (!isspace(c)) { // Début d'une commande ou argument
+                    if (c == '"') { // Si on trouve un guillemet ouvrant
+                        state = STATE_QUOTE;
+                        token_idx = 0;
+                    } else if (c == ';') {
+                        continue;
+                    } else {
+                        state = COMMAND;
+                        token[token_idx++] = c; // Commencer à stocker le token
+                        cmd_idx++;
+                        arg_idx = 0;
+                        commands[cmd_idx].next_operator = NONE; // Aucun opérateur par défaut
+                    }
                 }
+                break;
 
-                // Si c'est un opérateur ou la fin, terminer la commande actuelle
-                if (c == ';') {
-                    commands[cmd_idx].next_operator = SEQUENCE;
-                    commands[cmd_idx].args[arg_idx] = NULL; // Terminer les arguments
-                    state = START; // Recommencer pour une nouvelle commande
-                } else if (c == '&' && line[i + 1] == '&') {
-                    commands[cmd_idx].next_operator = AND;
-                    commands[cmd_idx].args[arg_idx] = NULL;
-                    i++; // Sauter le deuxième &
-                    state = START;
-                } else if (c == '|' && line[i + 1] == '|') {
-                    commands[cmd_idx].next_operator = OR;
-                    commands[cmd_idx].args[arg_idx] = NULL;
-                    i++; // Sauter le deuxième |
-                    state = START;
-                } else if (c == '\0') {
-                    commands[cmd_idx].args[arg_idx] = NULL; // Terminer les arguments
-                } else { // Passer aux arguments
+            case COMMAND:
+                if (c == '"') {
+                  state = STATE_QUOTE;
+                  token_idx = 0;
+                  } else if (isspace(c) || c == '\0' || c == ';' || c == '&' || c == '|') {
+                    if (token_idx > 0) {
+                        token[token_idx] = '\0';
+                        commands[cmd_idx].command = strdup(token);
+                        commands[cmd_idx].args[arg_idx++] = strdup(token);
+                        token_idx = 0;
+                    }
+
+                    if (c == ';') {
+                        commands[cmd_idx].next_operator = SEQUENCE;
+                        commands[cmd_idx].args[arg_idx] = NULL;
+                        state = START;
+                    } else if (c == '&' && line[i + 1] == '&') {
+                        commands[cmd_idx].next_operator = AND;
+                        commands[cmd_idx].args[arg_idx] = NULL;
+                        i++;
+                        state = START;
+                    } else if (c == '|' && line[i + 1] == '|') {
+                        commands[cmd_idx].next_operator = OR;
+                        commands[cmd_idx].args[arg_idx] = NULL;
+                        i++;
+                        state = START;
+                    } else if (c == '\0') {
+                        commands[cmd_idx].args[arg_idx] = NULL;
+                    } else {
+                        state = ARGUMENT;
+                    }
+                } else {
+                    token[token_idx++] = c;
+                }
+                break;
+
+            case ARGUMENT:
+             if (c == '"') { // Début d'une chaîne entre guillemets
+                    state = STATE_QUOTE;
+                    token_idx = 0;
+                } else if (isspace(c) || c == '\0' || c == ';' || c == '&' || c == '|') {
+                    if (token_idx > 0) {
+                        token[token_idx] = '\0';
+                        commands[cmd_idx].args[arg_idx++] = strdup(token);
+                        token_idx = 0;
+                    }
+
+                    if (c == ';') {
+                        commands[cmd_idx].next_operator = SEQUENCE;
+                        commands[cmd_idx].args[arg_idx] = NULL;
+                        state = START;
+                    } else if (c == '&' && line[i + 1] == '&') {
+                        commands[cmd_idx].next_operator = AND;
+                        commands[cmd_idx].args[arg_idx] = NULL;
+                        i++;
+                        state = START;
+                    } else if (c == '|' && line[i + 1] == '|') {
+                        commands[cmd_idx].next_operator = OR;
+                        commands[cmd_idx].args[arg_idx] = NULL;
+                        i++;
+                        state = START;
+                    } else if (c == '\0') {
+                        commands[cmd_idx].args[arg_idx] = NULL;
+                    }
+                } else {
+                    token[token_idx++] = c;
+                }
+                break;
+
+            case STATE_QUOTE:
+                if (c == '"') {
+                    token[token_idx] = '\0';
+                    commands[cmd_idx].args[arg_idx++] = strdup(token);
+                    token_idx = 0;
                     state = ARGUMENT;
-                }
-            } else {
-                token[token_idx++] = c; // Continuer à enregistrer le nom de la commande
-            }
-            break;
-
-        case ARGUMENT:
-            if (isspace(c) || c == '\0' || c == ';' || c == '&' || c == '|') {
-                if (token_idx > 0) { // Fin de l'argument
-                    token[token_idx] = '\0'; // Terminer le token
-                    commands[cmd_idx].args[arg_idx++] = strdup(token); // Ajouter l'argument
-                    token_idx = 0; // Réinitialiser l'index du token
-                }
-
-                if (c == ';') {
-                    commands[cmd_idx].next_operator = SEQUENCE;
-                    commands[cmd_idx].args[arg_idx] = NULL; // Terminer les arguments
-                    state = START; // Nouvelle commande
-                } else if (c == '&' && line[i + 1] == '&') {
-                    commands[cmd_idx].next_operator = AND;
-                    commands[cmd_idx].args[arg_idx] = NULL;
-                    i++;
-                    state = START;
-                } else if (c == '|' && line[i + 1] == '|') {
-                    commands[cmd_idx].next_operator = OR;
-                    commands[cmd_idx].args[arg_idx] = NULL;
-                    i++;
-                    state = START;
                 } else if (c == '\0') {
-                    commands[cmd_idx].args[arg_idx] = NULL; // Fin de la ligne
+                    fprintf(stderr, "Erreur : guillemets non fermés.\n");
+                    *num_commands = 0;
+                    return;
+                } else {
+                    token[token_idx++] = c;
                 }
-            } else {
-                token[token_idx++] = c; // Continuer à enregistrer l'argument
-            }
-            break;
+                break;
 
-        default:
-            break;
+            default:
+                break;
         }
     }
 
-    // Supprimer les commandes vides
     if (cmd_idx >= 0 && commands[cmd_idx].command == NULL) {
-        cmd_idx--;
+        cmd_idx--; // Supprimer les commandes vides
     }
 
-    *num_commands = cmd_idx + 1; // Mettre à jour le nombre total de commandes
+    *num_commands = cmd_idx + 1;
 }
-
 
 
 

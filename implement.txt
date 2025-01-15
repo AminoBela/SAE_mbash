@@ -5,6 +5,7 @@ Mardi:
 
 - Debut du projet, implementation de execv, automate pour les operateurs
 - Implementation de la commande history avec history -c pour effacer cet historique.
+- Commande exit
 
 
 Bucket des choses a faire:
@@ -14,4 +15,4 @@ Execution de commandes depuis l'historique (fleche haut)
 Aliases de commandes
 Operateurs comme les pipes "|" et redirections ">" ">>" 
 Apparence du propt selon user et repertoire courant
-
+VARIABLES D'ENVIRONNEMENT
