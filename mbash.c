@@ -70,13 +70,16 @@ int main() {
     char line[1024]; // Ligne de commande
     ParsedCommand commands[MAX_TOKENS]; // Commandes parsées
     int num_commands; // Nombre de commandes
+    char cwd[PATH_MAX]; // Répertoire courant
 
     /**
      * Boucle principale, lit une ligne de commande à la fois
      */
     while (1) {
-        printf(">");
 
+        printf("%s >", getcwd(cwd, sizeof(cwd)));
+
+        printf("%d", getchar());
         // Lire une ligne de commande
         if (fgets(line, sizeof(line), stdin) == NULL) {
             break; // Fin de fichier (Ctrl+D)
@@ -348,7 +351,7 @@ void save_history(ParsedCommand *cmd) {
         }
 
         // Écrire la commande dans le fichier
-        fprintf(file, "%s %s\n", cmd->command, strArgs);
+        fprintf(file, "%s %s\n", cmd->command, strArgs, cmd->next_operator);
 
         // Libérer la mémoire allouée
         free(strArgs);

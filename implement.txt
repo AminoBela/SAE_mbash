@@ -10,8 +10,6 @@ Mardi:
 Bucket des choses a faire:
 
 Completion automatique
-Execution de commandes depuis l'historique (fleche haut)
 Aliases de commandes
 Operateurs comme les pipes "|" et redirections ">" ">>" 
 Apparence du propt selon user et repertoire courant
-
