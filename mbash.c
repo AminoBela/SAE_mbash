@@ -54,6 +54,7 @@ typedef struct {
     char *command;
     char *args[MAX_TOKENS];
     Operator next_operator;
+    int background;
 } ParsedCommand;
 
 /**
@@ -69,6 +70,8 @@ void clear_history();
  * Fonction principale
  */
 int main() {
+
+    signal(SIGINT, SIG_IGN);
 
     char line[1024]; // Ligne de commande
     ParsedCommand commands[MAX_TOKENS]; // Commandes parsées
@@ -133,9 +136,7 @@ void parse_line(const char *line, ParsedCommand commands[], int *num_commands) {
     for (int i = 0; i <= strlen(line); i++) {
         char c = line[i];
 
-
         switch (state) {
-
             case START:
                 if (!isspace(c)) { // Début d'une commande ou argument
                     if (c == '"') { // Si on trouve un guillemet ouvrant
@@ -164,8 +165,11 @@ void parse_line(const char *line, ParsedCommand commands[], int *num_commands) {
                         commands[cmd_idx].args[arg_idx++] = strdup(token);
                         token_idx = 0;
                     }
-
-                    if (c == ';') {
+                    if (c == '&' && line[i + 1] != '&') {
+                        commands[cmd_idx].background = 1;
+                        commands[cmd_idx].args[arg_idx] = NULL;
+                        state = START;
+                    } else if (c == ';') {
                         commands[cmd_idx].next_operator = SEQUENCE;
                         commands[cmd_idx].args[arg_idx] = NULL;
                         state = START;
@@ -181,6 +185,7 @@ void parse_line(const char *line, ParsedCommand commands[], int *num_commands) {
                         state = START;
                     } else if (c == '\0') {
                         commands[cmd_idx].args[arg_idx] = NULL;
+
                     } else {
                         state = ARGUMENT;
                     }
@@ -201,7 +206,6 @@ void parse_line(const char *line, ParsedCommand commands[], int *num_commands) {
                     commands[cmd_idx].args[arg_idx++] = strdup(token);
                     token_idx = 0;
                  }
-
                  if (c == ';') {
                      commands[cmd_idx].next_operator = SEQUENCE;
                      commands[cmd_idx].args[arg_idx] = NULL;
@@ -211,6 +215,10 @@ void parse_line(const char *line, ParsedCommand commands[], int *num_commands) {
                     commands[cmd_idx].args[arg_idx] = NULL;
                     i++;
                     state = START;
+                 } else if (c == '&' && line[i + 1] != '&') {
+                     commands[cmd_idx].background = 1;
+                     commands[cmd_idx].args[arg_idx] = NULL;
+                     state = START;
                  } else if (c == '|' && line[i + 1] == '|') {
                      commands[cmd_idx].next_operator = OR;
                      commands[cmd_idx].args[arg_idx] = NULL;
@@ -247,7 +255,6 @@ void parse_line(const char *line, ParsedCommand commands[], int *num_commands) {
     if (cmd_idx >= 0 && commands[cmd_idx].command == NULL) {
         cmd_idx--; // Supprimer les commandes vides
     }
-
     *num_commands = cmd_idx + 1;
 }
 
@@ -312,9 +319,16 @@ int execute_command(ParsedCommand *cmd) {
         exit(EXIT_FAILURE);
     } else if (pid > 0) {
         // Processus parent
-        int status;
-        waitpid(pid, &status, 0); // Attendre la fin du processus enfant
-        return WEXITSTATUS(status); // Retourne le code de sortie
+        if (!cmd->background) {
+            // Attendre la fin si la commande n'est pas en arrière-plan
+            int status;
+            waitpid(pid, &status, 0);
+            return WEXITSTATUS(status);
+        } else {
+            // Afficher un message pour les commandes en arrière-plan
+            printf("[PID %d] Commande exécutée en arrière-plan\n", pid);
+            return 0; // Considéré comme réussi pour le parent
+        }
     } else {
         perror("Erreur de fork");
         return -1;
