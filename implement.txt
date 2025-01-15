@@ -11,8 +11,11 @@ Mardi:
 Bucket des choses a faire:
 
 Completion automatique
-Execution de commandes depuis l'historique (fleche haut)
 Aliases de commandes
 Operateurs comme les pipes "|" et redirections ">" ">>" 
+<<<<<<< HEAD
 Apparence du propt selon user et repertoire courant
 VARIABLES D'ENVIRONNEMENT
+=======
+Apparence du propt selon user et repertoire courant
+>>>>>>> 3499db685b2f41cd1f6ea0f45c7395ab9c6d9470
