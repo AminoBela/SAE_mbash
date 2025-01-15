@@ -2,9 +2,11 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <limits.h>
 #include <sys/wait.h> // pour waitpid et WEXITSTATUS
 #include <ctype.h> // pour isspace
 #define MAXLI 2048 // Taille maximale d'une ligne
+#define PATHMAX 4096
 
 #define MAX_TOKENS 128 // Nombre maximal de commandes
 #define MAX_TOKEN_LENGTH 256 // Taille maximale d'une commande
@@ -78,9 +80,8 @@ int main() {
      */
     while (1) {
 
-        printf("%s >", getcwd(cwd, sizeof(cwd)));
+        printf("%s > ", getcwd(cwd, sizeof(cwd)));
 
-        printf("%d", getchar());
         // Lire une ligne de commande
         if (fgets(line, sizeof(line), stdin) == NULL) {
             break; // Fin de fichier (Ctrl+D)
@@ -220,7 +221,7 @@ void parse_line(const char *line, ParsedCommand commands[], int *num_commands) {
                 }
                 break;
 
-            case STATE_QUOTE:
+            ase STATE_QUOTE:
                 if (c == '"') {
                     token[token_idx] = '\0';
                     commands[cmd_idx].args[arg_idx++] = strdup(token);
@@ -378,7 +379,7 @@ void save_history(ParsedCommand *cmd) {
         }
 
         // Écrire la commande dans le fichier
-        fprintf(file, "%s %s\n", cmd->command, strArgs, cmd->next_operator);
+        fprintf(file, "%s %s\n", cmd->command, strArgs);
 
         // Libérer la mémoire allouée
         free(strArgs);
