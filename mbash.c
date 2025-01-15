@@ -43,7 +43,7 @@ int main() {
     int num_commands;
 
     while (1) {
-        printf("Commande: ");
+        printf("> ");
         if (fgets(line, sizeof(line), stdin) == NULL) {
             break; // Fin de fichier (Ctrl+D)
         }
@@ -244,7 +244,10 @@ void save_history(ParsedCommand *cmd) {
     // Si l'utilisateur n'as pas juste appuyé sur entrer
     if (strcmp("\n", cmd->command) != 0 && strcmp("", cmd->command) != 0) {
         char* strArgs = "";
-
+        for (int i = 1; cmd->args[i] != NULL; i++) {
+            strArgs = strcat(strArgs, cmd->args[i]);
+            strArgs = strcat(strArgs, " ");
+        }
         // Écrire la commande dans le fichier
         fprintf(file, "%s %s\n", cmd->command, strArgs);
     }
