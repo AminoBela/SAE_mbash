@@ -322,20 +322,41 @@ void save_history(ParsedCommand *cmd) {
         return;
     }
 
-    // Si l'utilisateur n'as pas juste appuyé sur entrer
+    // Si l'utilisateur n'a pas juste appuyé sur Entrée
     if (strcmp("\n", cmd->command) != 0 && strcmp("", cmd->command) != 0) {
-        char* strArgs = "";
+        // Allouer une mémoire initiale pour strArgs
+        size_t total_length = 1; // Pour le caractère nul
+        char* strArgs = malloc(total_length);
+
+        strArgs[0] = '\0'; // Initialiser comme chaîne vide
+
+        // Construire la chaîne strArgs avec les arguments
         for (int i = 1; cmd->args[i] != NULL; i++) {
-            printf("%s\n", cmd->args[i]);
-            strArgs = strcat(strArgs, cmd->args[i]);
+
+            // Ajouter l'argument et un espace
+            total_length += strlen(cmd->args[i]) + 1;
+            char* temp = realloc(strArgs, total_length);
+            if (temp == NULL) {
+                perror("Erreur de réallocation de mémoire");
+                free(strArgs);
+                fclose(file);
+                return;
+            }
+            strArgs = temp;
+            strcat(strArgs, cmd->args[i]);
+            strcat(strArgs, " ");
         }
+
         // Écrire la commande dans le fichier
         fprintf(file, "%s %s\n", cmd->command, strArgs);
+
+        // Libérer la mémoire allouée
+        free(strArgs);
     }
 
     fclose(file);
-
 }
+
 
 /**
  * Fonction pour effacer l'historique des commandes
