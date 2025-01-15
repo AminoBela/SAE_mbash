@@ -327,6 +327,7 @@ void save_history(ParsedCommand *cmd) {
         char* strArgs = "";
         for (int i = 1; cmd->args[i] != NULL; i++) {
             printf("%s\n", cmd->args[i]);
+            strArgs = strcat(strArgs, cmd->args[i]);
         }
         // Écrire la commande dans le fichier
         fprintf(file, "%s %s\n", cmd->command, strArgs);
