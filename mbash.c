@@ -119,104 +119,105 @@ int main() {
  * @param num_commands
  */
 void parse_line(const char *line, ParsedCommand commands[], int *num_commands) {
-
     State state = START; // État initial
-    char token[MAX_TOKEN_LENGTH]; // Token actuel, pour stocker le nom de la commande ou un argument
-    int token_idx = 0; // Index du token actuel
+    char token[MAX_TOKEN_LENGTH]; // Token actuel pour stocker commande/argument
+    int token_idx = 0; // Index dans le token
     int cmd_idx = -1; // Index de la commande actuelle
-    int arg_idx = 0; // Index de l'argument actuel
+    int arg_idx = 0; // Index des arguments de la commande actuelle
 
-    /**
-     * Analyse de chaque caractère de la ligne de commande
-     */
     for (int i = 0; i <= strlen(line); i++) {
-
         char c = line[i];
 
-        /**
-         * Switch sur l'état actuel de l'analyseur de ligne de commande (Automate)
-         */
         switch (state) {
-
-            // État initial, attend le début d'une commande
-            case START:
-                if (!isspace(c)) {
-                    state = COMMAND;
-                    token[token_idx++] = c; // Commencer à stocker le nom de la commande
-                    cmd_idx++; // Passer à la commande suivante
-                    arg_idx = 0; // Réinitialiser l'index des arguments pour chaque commande
-                    commands[cmd_idx].next_operator = NONE; // Par défaut
-                }
-                break;
-
-            // Analyse du nom de la commande
-            case COMMAND:
-                // si c'est un espace ou la fin de la ligne, on termine le nom de la commande
-                if (isspace(c) || c == '\0') {
-                    token[token_idx] = '\0'; // Terminer le token
-                    commands[cmd_idx].command = strdup(token); // Stocker le nom de la commande
-                    commands[cmd_idx].args[arg_idx++] = strdup(token); // Stocker le nom de la commande dans les arguments
-                    token_idx = 0; // Réinitialiser l'index du token
-                    state = ARGUMENT; // Passer à l'analyse des arguments
-                } else if (c == ';' || c == '&' || c == '|') {
-                    token[token_idx] = '\0';
-                    commands[cmd_idx].command = strdup(token);
-                    commands[cmd_idx].args[arg_idx++] = strdup(token);
-                    token_idx = 0;
-                    state = OPERATOR;
-                    i--; // Réanalyser l'opérateur
-                } else {
-                    token[token_idx++] = c; // Continuer à stocker le nom de la commande
-                }
-                break;
-
-            // Analyse des arguments de la commande
-            case ARGUMENT:
-                // même principe que pour le nom de la commande
-                if (isspace(c) || c == '\0') {
-                    if (token_idx > 0) {
-                        token[token_idx] = '\0';
-                        commands[cmd_idx].args[arg_idx++] = strdup(token);
-                        token_idx = 0;
-                    }
-                    if (c == '\0') {
-                        commands[cmd_idx].args[arg_idx] = NULL; // Terminer le tableau des arguments
-                    }
-                } else if (c == ';' || c == '&' || c == '|') {
-                    commands[cmd_idx].args[arg_idx] = NULL; // Terminer avant de passer à un opérateur
-                    state = OPERATOR; // Passer à l'analyse de l'opérateur
-                    i--; // Réanalyser l'opérateur
-                } else {
-                    token[token_idx++] = c;
-                }
-                break;
-
-            // Si un opérateur logique est détecté, passer à l'analyse de l'opérateur
-            // on a 3 cas possibles : ;, &&, ||
-            case OPERATOR:
-            if (c == ';') {
-                commands[cmd_idx].next_operator = SEQUENCE;
-                commands[cmd_idx].args[arg_idx] = NULL; // Terminer le tableau des arguments
-                state = START;
-            } else if (c == '&' && line[i + 1] == '&') {
-                commands[cmd_idx].next_operator = AND;
-                commands[cmd_idx].args[arg_idx] = NULL; // Terminer le tableau des arguments
-                i++; // Sauter le deuxième &
-                state = START;
-            } else if (c == '|' && line[i + 1] == '|') {
-                commands[cmd_idx].next_operator = OR;
-                commands[cmd_idx].args[arg_idx] = NULL; // Terminer le tableau des arguments
-                i++; // Sauter le deuxième |
-                state = START;
+        case START:
+            if (!isspace(c)) { // Si on trouve une commande ou un argument
+                state = COMMAND;
+                token[token_idx++] = c; // Commencer à stocker le token
+                cmd_idx++; // Nouvelle commande
+                arg_idx = 0; // Réinitialiser l'index des arguments
+                commands[cmd_idx].next_operator = NONE; // Par défaut
             }
             break;
 
-            default:
-                break;
+        case COMMAND:
+            if (isspace(c) || c == '\0' || c == ';' || c == '&' || c == '|') {
+                if (token_idx > 0) { // Fin du nom de la commande
+                    token[token_idx] = '\0'; // Terminer le token
+                    commands[cmd_idx].command = strdup(token); // Enregistrer la commande
+                    commands[cmd_idx].args[arg_idx++] = strdup(token); // Ajouter comme premier argument
+                    token_idx = 0; // Réinitialiser l'index du token
+                }
+
+                // Si c'est un opérateur ou la fin, terminer la commande actuelle
+                if (c == ';') {
+                    commands[cmd_idx].next_operator = SEQUENCE;
+                    commands[cmd_idx].args[arg_idx] = NULL; // Terminer les arguments
+                    state = START; // Recommencer pour une nouvelle commande
+                } else if (c == '&' && line[i + 1] == '&') {
+                    commands[cmd_idx].next_operator = AND;
+                    commands[cmd_idx].args[arg_idx] = NULL;
+                    i++; // Sauter le deuxième &
+                    state = START;
+                } else if (c == '|' && line[i + 1] == '|') {
+                    commands[cmd_idx].next_operator = OR;
+                    commands[cmd_idx].args[arg_idx] = NULL;
+                    i++; // Sauter le deuxième |
+                    state = START;
+                } else if (c == '\0') {
+                    commands[cmd_idx].args[arg_idx] = NULL; // Terminer les arguments
+                } else { // Passer aux arguments
+                    state = ARGUMENT;
+                }
+            } else {
+                token[token_idx++] = c; // Continuer à enregistrer le nom de la commande
+            }
+            break;
+
+        case ARGUMENT:
+            if (isspace(c) || c == '\0' || c == ';' || c == '&' || c == '|') {
+                if (token_idx > 0) { // Fin de l'argument
+                    token[token_idx] = '\0'; // Terminer le token
+                    commands[cmd_idx].args[arg_idx++] = strdup(token); // Ajouter l'argument
+                    token_idx = 0; // Réinitialiser l'index du token
+                }
+
+                if (c == ';') {
+                    commands[cmd_idx].next_operator = SEQUENCE;
+                    commands[cmd_idx].args[arg_idx] = NULL; // Terminer les arguments
+                    state = START; // Nouvelle commande
+                } else if (c == '&' && line[i + 1] == '&') {
+                    commands[cmd_idx].next_operator = AND;
+                    commands[cmd_idx].args[arg_idx] = NULL;
+                    i++;
+                    state = START;
+                } else if (c == '|' && line[i + 1] == '|') {
+                    commands[cmd_idx].next_operator = OR;
+                    commands[cmd_idx].args[arg_idx] = NULL;
+                    i++;
+                    state = START;
+                } else if (c == '\0') {
+                    commands[cmd_idx].args[arg_idx] = NULL; // Fin de la ligne
+                }
+            } else {
+                token[token_idx++] = c; // Continuer à enregistrer l'argument
+            }
+            break;
+
+        default:
+            break;
         }
     }
-    *num_commands = cmd_idx + 1;
+
+    // Supprimer les commandes vides
+    if (cmd_idx >= 0 && commands[cmd_idx].command == NULL) {
+        cmd_idx--;
+    }
+
+    *num_commands = cmd_idx + 1; // Mettre à jour le nombre total de commandes
 }
+
+
+
 
 /**
  * Fonction pour exécuter une commande
@@ -337,14 +338,13 @@ void save_history(ParsedCommand *cmd) {
  * Fonction pour effacer l'historique des commandes
  */
 void clear_history() {
-
-    // Ouvrir le fichier en mode écriture pour effacer l'historique
     FILE* file = fopen("history.txt", "w");
-    if (file != NULL) {
-        remove("history.txt");
-        history();
+    if (file == NULL) {
+        perror("Erreur d'ouverture du fichier");
+        return;
     }
 
     fclose(file);
-
+    printf("Historique effacé.\n");
 }
+
