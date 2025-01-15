@@ -192,6 +192,9 @@ void parse_line(const char *line, ParsedCommand commands[], int *num_commands) {
             case ARGUMENT:
              if (isspace(c)) {
                continue;
+             } else if (c == '"') {
+                 state = STATE_QUOTE;
+                 token_idx = 0;
              } else if (c == '\0' || c == ';' || c == '&' || c == '|') {
                  if (token_idx > 0) {
                     token[token_idx] = '\0';
