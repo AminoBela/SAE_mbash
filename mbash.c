@@ -313,6 +313,11 @@ int execute_command(ParsedCommand *cmd) {
     pid_t pid = fork();
     // Si pid == 0, c'est le processus enfant qui exécute la commande
     if (pid == 0) {
+      if (cmd->background) {
+        // redirection des sorties pour les commandes en arrière-plan
+        freopen("/dev/null", "w", stdout);
+        freopen("/dev/null", "w", stderr);
+        }
         // Processus enfant
         execvp(cmd->command, cmd->args);
         perror("Erreur lors de l'exécution de la commande");
