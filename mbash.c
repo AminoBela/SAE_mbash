@@ -325,10 +325,8 @@ void save_history(ParsedCommand *cmd) {
     // Si l'utilisateur n'as pas juste appuyé sur entrer
     if (strcmp("\n", cmd->command) != 0 && strcmp("", cmd->command) != 0) {
         char* strArgs = "";
-        for (int i = 1; cmd->args[i] != NULL; i++) {
-            strArgs = strcat(strArgs, cmd->args[i]);
-            strArgs = strcat(strArgs, " ");
-        }
+        printf("%s", cmd->args[0]);
+        printf("%s", cmd->args[1]);
         // Écrire la commande dans le fichier
         fprintf(file, "%s %s\n", cmd->command, strArgs);
     }
