@@ -1,0 +1,13 @@
+history 
+!3[A[A[A[A[A[A[A[A[A[A 
+open 
+open 
+clear 
+ls 
+ls 
+ls 
+ls 
+ls 
+;ls 
+git 
+git 
