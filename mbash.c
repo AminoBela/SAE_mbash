@@ -443,3 +443,4 @@ void clear_history() {
     fclose(file);
     printf("Historique effacé.\n");
 }
+

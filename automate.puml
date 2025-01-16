@@ -30,3 +30,52 @@ END --> [*] : ligne terminée
 ERROR --> [*] : arrêt dû à une erreur
 
 @enduml
+@startuml
+
+title Automate de lecture caractère par caractère
+
+state START {
+    START --> COMMAND : Caractère valide (pas espace, pas guillemet)
+    START --> STATE_QUOTE : Guillemet ouvrant (")
+    START --> ERROR : Caractère invalide
+}
+
+state COMMAND {
+    COMMAND --> COMMAND : Caractère valide
+    COMMAND --> ARGUMENT : Espace ou transition vers argument
+    COMMAND --> OPERATOR : Opérateur logique (|, &, ;)
+    COMMAND --> STATE_QUOTE : Guillemet (")
+    COMMAND --> END : Fin de ligne
+}
+
+state ARGUMENT {
+    ARGUMENT --> ARGUMENT : Caractère valide
+    ARGUMENT --> OPERATOR : Opérateur logique (|, &, ;)
+    ARGUMENT --> STATE_QUOTE : Guillemet (")
+    ARGUMENT --> END : Fin de ligne
+}
+
+state STATE_QUOTE {
+    STATE_QUOTE --> STATE_QUOTE : Caractère valide
+    STATE_QUOTE --> ARGUMENT : Guillemet (")
+    STATE_QUOTE --> ERROR : Fin de ligne avant fermeture
+}
+
+state OPERATOR {
+    OPERATOR --> OPERATOR : Deuxième operateur
+    OPERATOR --> START : Nouvelle commande après deux opérateur
+    OPERATOR --> END : Fin de ligne
+}
+
+state END {
+
+}
+
+state ERROR {
+}
+
+[*] --> START
+START --> END : Ligne vide
+END --> [*] : Fin
+
+@enduml
