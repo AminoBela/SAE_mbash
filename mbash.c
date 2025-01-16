@@ -6,6 +6,7 @@
 #include <sys/wait.h> // pour waitpid et WEXITSTATUS
 #include <ctype.h> // pour isspace
 #define MAXLI 2048 // Taille maximale d'une ligne
+#include <readline/readline.h>
 #define PATHMAX 4096
 
 #define MAX_TOKENS 128 // Nombre maximal de commandes
@@ -66,11 +67,17 @@ void history();
 void save_history(ParsedCommand *cmd);
 void clear_history();
 
+int handle_up_arrow(int count, int key) {
+    printf("\nFlèche Haut détectée !\n");
+    return 0; // Retourner 0 pour continuer
+}
+
 /**
  * Fonction principale
  */
 int main() {
 
+    char *input;
     signal(SIGINT, SIG_IGN);
 
     char line[1024]; // Ligne de commande
@@ -78,17 +85,27 @@ int main() {
     int num_commands; // Nombre de commandes
     char cwd[PATH_MAX]; // Répertoire courant
 
+    rl_bind_keyseq("\\e[A", handle_up_arrow);
+
     /**
      * Boucle principale, lit une ligne de commande à la fois
      */
     while (1) {
 
         printf("%s > ", getcwd(cwd, sizeof(cwd)));
+        //printf("%s >"/*, getcwd(cwd, sizeof(cwd))*/);
+        line = readline("> ");
 
         // Lire une ligne de commande
+        if (line == NULL) {
+            break;
+        }
+
+        /* Lire une ligne de commande
         if (fgets(line, sizeof(line), stdin) == NULL) {
             break; // Fin de fichier (Ctrl+D)
-        }
+        }*/
+
         line[strcspn(line, "\n")] = '\0'; // Supprime le \n final
 
         // Réinitialisation
@@ -117,6 +134,7 @@ int main() {
             last_status = execute_command(&commands[i]);
         }
     }
+    free(line);
     return 0;
 }
 
