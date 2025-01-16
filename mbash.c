@@ -134,7 +134,7 @@ int main() {
             last_status = execute_command(&commands[i]);
         }
     }
-    free(line);
+    free(input);
     return 0;
 }
 
