@@ -1,13 +1,9 @@
-history 
-!3[A[A[A[A[A[A[A[A[A[A 
-open 
-open 
 clear 
+clear 
+exit 
+echo helloecho  hello 
+echo helloecho  hello 
+echo helloecho  hello 
+echo helloecho  hello 
 ls 
-ls 
-ls 
-ls 
-ls 
-;ls 
-git 
-git 
+-l 

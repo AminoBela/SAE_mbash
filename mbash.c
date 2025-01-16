@@ -2,10 +2,12 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <limits.h>
 #include <sys/wait.h> // pour waitpid et WEXITSTATUS
 #include <ctype.h> // pour isspace
 #define MAXLI 2048 // Taille maximale d'une ligne
 #include <readline/readline.h>
+#define PATHMAX 4096
 
 #define MAX_TOKENS 128 // Nombre maximal de commandes
 #define MAX_TOKEN_LENGTH 256 // Taille maximale d'une commande
@@ -23,6 +25,7 @@ typedef enum {
     START,
     COMMAND,
     ARGUMENT,
+    STATE_QUOTE,
     OPERATOR,
     END,
     ERROR
@@ -52,6 +55,7 @@ typedef struct {
     char *command;
     char *args[MAX_TOKENS];
     Operator next_operator;
+    int background;
 } ParsedCommand;
 
 /**
@@ -74,6 +78,8 @@ int handle_up_arrow(int count, int key) {
 int main() {
 
     char *input;
+    signal(SIGINT, SIG_IGN);
+
     char line[1024]; // Ligne de commande
     ParsedCommand commands[MAX_TOKENS]; // Commandes parsées
     int num_commands; // Nombre de commandes
@@ -86,9 +92,11 @@ int main() {
      */
     while (1) {
 
+        printf("%s > ", getcwd(cwd, sizeof(cwd)));
         //printf("%s >"/*, getcwd(cwd, sizeof(cwd))*/);
         line = readline("> ");
 
+        // Lire une ligne de commande
         if (line == NULL) {
             break;
         }
@@ -147,93 +155,126 @@ void parse_line(const char *line, ParsedCommand commands[], int *num_commands) {
         char c = line[i];
 
         switch (state) {
-        case START:
-            if (!isspace(c)) { // Si on trouve une commande ou un argument
-                state = COMMAND;
-                token[token_idx++] = c; // Commencer à stocker le token
-                cmd_idx++; // Nouvelle commande
-                arg_idx = 0; // Réinitialiser l'index des arguments
-                commands[cmd_idx].next_operator = NONE; // Par défaut
-            }
-            break;
-
-        case COMMAND:
-            if (isspace(c) || c == '\0' || c == ';' || c == '&' || c == '|') {
-                if (token_idx > 0) { // Fin du nom de la commande
-                    token[token_idx] = '\0'; // Terminer le token
-                    commands[cmd_idx].command = strdup(token); // Enregistrer la commande
-                    commands[cmd_idx].args[arg_idx++] = strdup(token); // Ajouter comme premier argument
-                    token_idx = 0; // Réinitialiser l'index du token
+            case START:
+                if (!isspace(c)) { // Début d'une commande ou argument
+                    if (c == '"') { // Si on trouve un guillemet ouvrant
+                        state = STATE_QUOTE;
+                        token_idx = 0;
+                    } else if (c == ';') {
+                        continue;
+                    } else {
+                        state = COMMAND;
+                        token[token_idx++] = c; // Commencer à stocker le token
+                        cmd_idx++;
+                        arg_idx = 0;
+                        commands[cmd_idx].next_operator = NONE; // Aucun opérateur par défaut
+                    }
                 }
+                break;
 
-                // Si c'est un opérateur ou la fin, terminer la commande actuelle
-                if (c == ';') {
-                    commands[cmd_idx].next_operator = SEQUENCE;
-                    commands[cmd_idx].args[arg_idx] = NULL; // Terminer les arguments
-                    state = START; // Recommencer pour une nouvelle commande
-                } else if (c == '&' && line[i + 1] == '&') {
+            case COMMAND:
+                if (c == '"') {
+                  state = STATE_QUOTE;
+                  token_idx = 0;
+                  } else if (isspace(c) || c == '\0' || c == ';' || c == '&' || c == '|') {
+                    if (token_idx > 0) {
+                        token[token_idx] = '\0';
+                        commands[cmd_idx].command = strdup(token);
+                        commands[cmd_idx].args[arg_idx++] = strdup(token);
+                        token_idx = 0;
+                    }
+                    if (c == '&' && line[i + 1] != '&') {
+                        commands[cmd_idx].background = 1;
+                        commands[cmd_idx].args[arg_idx] = NULL;
+                        state = START;
+                    } else if (c == ';') {
+                        commands[cmd_idx].next_operator = SEQUENCE;
+                        commands[cmd_idx].args[arg_idx] = NULL;
+                        state = START;
+                    } else if (c == '&' && line[i + 1] == '&') {
+                        commands[cmd_idx].next_operator = AND;
+                        commands[cmd_idx].args[arg_idx] = NULL;
+                        i++;
+                        state = START;
+                    } else if (c == '|' && line[i + 1] == '|') {
+                        commands[cmd_idx].next_operator = OR;
+                        commands[cmd_idx].args[arg_idx] = NULL;
+                        i++;
+                        state = START;
+                    } else if (c == '\0') {
+                        commands[cmd_idx].args[arg_idx] = NULL;
+
+                    } else {
+                        state = ARGUMENT;
+                    }
+                } else {
+                    token[token_idx++] = c;
+                }
+                break;
+
+            case ARGUMENT:
+             if (isspace(c)) {
+               continue;
+             } else if (c == '"') {
+                 state = STATE_QUOTE;
+                 token_idx = 0;
+             } else if (c == '\0' || c == ';' || c == '&' || c == '|') {
+                 if (token_idx > 0) {
+                    token[token_idx] = '\0';
+                    commands[cmd_idx].args[arg_idx++] = strdup(token);
+                    token_idx = 0;
+                 }
+                 if (c == ';') {
+                     commands[cmd_idx].next_operator = SEQUENCE;
+                     commands[cmd_idx].args[arg_idx] = NULL;
+                     state = START;
+                 } else if (c == '&' && line[i + 1] == '&') {
                     commands[cmd_idx].next_operator = AND;
                     commands[cmd_idx].args[arg_idx] = NULL;
-                    i++; // Sauter le deuxième &
+                    i++;
                     state = START;
-                } else if (c == '|' && line[i + 1] == '|') {
-                    commands[cmd_idx].next_operator = OR;
+                 } else if (c == '&' && line[i + 1] != '&') {
+                     commands[cmd_idx].background = 1;
+                     commands[cmd_idx].args[arg_idx] = NULL;
+                     state = START;
+                 } else if (c == '|' && line[i + 1] == '|') {
+                     commands[cmd_idx].next_operator = OR;
+                     commands[cmd_idx].args[arg_idx] = NULL;
+                    i++;
+                    state = START;
+                 } else if (c == '\0') {
                     commands[cmd_idx].args[arg_idx] = NULL;
-                    i++; // Sauter le deuxième |
-                    state = START;
-                } else if (c == '\0') {
-                    commands[cmd_idx].args[arg_idx] = NULL; // Terminer les arguments
-                } else { // Passer aux arguments
+                 }
+             } else {
+                 token[token_idx++] = c;
+             }
+             break;
+
+            case STATE_QUOTE:
+                if (c == '"') {
+                    token[token_idx] = '\0';
+                    commands[cmd_idx].args[arg_idx++] = strdup(token);
+                    token_idx = 0;
                     state = ARGUMENT;
-                }
-            } else {
-                token[token_idx++] = c; // Continuer à enregistrer le nom de la commande
-            }
-            break;
-
-        case ARGUMENT:
-            if (isspace(c) || c == '\0' || c == ';' || c == '&' || c == '|') {
-                if (token_idx > 0) { // Fin de l'argument
-                    token[token_idx] = '\0'; // Terminer le token
-                    commands[cmd_idx].args[arg_idx++] = strdup(token); // Ajouter l'argument
-                    token_idx = 0; // Réinitialiser l'index du token
-                }
-
-                if (c == ';') {
-                    commands[cmd_idx].next_operator = SEQUENCE;
-                    commands[cmd_idx].args[arg_idx] = NULL; // Terminer les arguments
-                    state = START; // Nouvelle commande
-                } else if (c == '&' && line[i + 1] == '&') {
-                    commands[cmd_idx].next_operator = AND;
-                    commands[cmd_idx].args[arg_idx] = NULL;
-                    i++;
-                    state = START;
-                } else if (c == '|' && line[i + 1] == '|') {
-                    commands[cmd_idx].next_operator = OR;
-                    commands[cmd_idx].args[arg_idx] = NULL;
-                    i++;
-                    state = START;
                 } else if (c == '\0') {
-                    commands[cmd_idx].args[arg_idx] = NULL; // Fin de la ligne
+                    fprintf(stderr, "Erreur : guillemets non fermés.\n");
+                    *num_commands = 0;
+                    return;
+                } else {
+                    token[token_idx++] = c;
                 }
-            } else {
-                token[token_idx++] = c; // Continuer à enregistrer l'argument
-            }
-            break;
+                break;
 
-        default:
-            break;
+            default:
+                break;
         }
     }
 
-    // Supprimer les commandes vides
     if (cmd_idx >= 0 && commands[cmd_idx].command == NULL) {
-        cmd_idx--;
+        cmd_idx--; // Supprimer les commandes vides
     }
-
-    *num_commands = cmd_idx + 1; // Mettre à jour le nombre total de commandes
+    *num_commands = cmd_idx + 1;
 }
-
 
 
 
@@ -267,6 +308,7 @@ int execute_command(ParsedCommand *cmd) {
         return 0;
     }
 
+
     // Commande history (voir cette fonction pour en savoir plus)
     if (strcmp(cmd->command, "history") == 0) {
         // Afficher l'historique
@@ -290,15 +332,27 @@ int execute_command(ParsedCommand *cmd) {
     pid_t pid = fork();
     // Si pid == 0, c'est le processus enfant qui exécute la commande
     if (pid == 0) {
+      if (cmd->background) {
+        // redirection des sorties pour les commandes en arrière-plan
+        freopen("/dev/null", "w", stdout);
+        freopen("/dev/null", "w", stderr);
+        }
         // Processus enfant
         execvp(cmd->command, cmd->args);
         perror("Erreur lors de l'exécution de la commande");
         exit(EXIT_FAILURE);
     } else if (pid > 0) {
         // Processus parent
-        int status;
-        waitpid(pid, &status, 0); // Attendre la fin du processus enfant
-        return WEXITSTATUS(status); // Retourne le code de sortie
+        if (!cmd->background) {
+            // Attendre la fin si la commande n'est pas en arrière-plan
+            int status;
+            waitpid(pid, &status, 0);
+            return WEXITSTATUS(status);
+        } else {
+            // Afficher un message pour les commandes en arrière-plan
+            printf("[PID %d] Commande exécutée en arrière-plan\n", pid);
+            return 0; // Considéré comme réussi pour le parent
+        }
     } else {
         perror("Erreur de fork");
         return -1;
@@ -366,7 +420,7 @@ void save_history(ParsedCommand *cmd) {
         }
 
         // Écrire la commande dans le fichier
-        fprintf(file, "%s %s\n", cmd->command, strArgs, cmd->next_operator);
+        fprintf(file, "%s %s\n", cmd->command, strArgs);
 
         // Libérer la mémoire allouée
         free(strArgs);
@@ -389,4 +443,3 @@ void clear_history() {
     fclose(file);
     printf("Historique effacé.\n");
 }
-
