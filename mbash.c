@@ -68,6 +68,12 @@ void history();
 void save_history(ParsedCommand *cmd);
 void clear_history();
 
+/**
+ * Fonction pour gérer la flèche Haut
+ * @param count
+ * @param key
+ * @return
+ */
 int handle_up_arrow(int count, int key) {
     printf("\nFlèche Haut détectée !\n");
     return 0; // Retourner 0 pour continuer
@@ -78,15 +84,15 @@ int handle_up_arrow(int count, int key) {
  */
 int main() {
 
-    char *input;
-    signal(SIGINT, SIG_IGN);
-
+    char *input; // iNput de l'utilisateur
     char line[1024]; // Ligne de commande
     ParsedCommand commands[MAX_TOKENS]; // Commandes parsées
     int num_commands; // Nombre de commandes
     char cwd[PATH_MAX]; // Répertoire courant
 
-    rl_bind_keyseq("\\e[A", handle_up_arrow);
+    signal(SIGINT, SIG_IGN); // Ignorer le signal SIGINT (Ctrl+C)
+
+    rl_bind_keyseq("\\e[A", handle_up_arrow); // Lier la flèche Haut à la fonction handle_up_arrow
 
     /**
      * Boucle principale, lit une ligne de commande à la fois
@@ -146,16 +152,27 @@ int main() {
  * @param num_commands
  */
 void parse_line(const char *line, ParsedCommand commands[], int *num_commands) {
+
     State state = START; // État initial
     char token[MAX_TOKEN_LENGTH]; // Token actuel pour stocker commande/argument
     int token_idx = 0; // Index dans le token
     int cmd_idx = -1; // Index de la commande actuelle
     int arg_idx = 0; // Index des arguments de la commande actuelle
 
+    /**
+    * Parcourir chaque caractère de la ligne de commande
+    */
     for (int i = 0; i <= strlen(line); i++) {
         char c = line[i];
 
+        /**
+        * Gestion des états de l'analyseur de ligne de commande
+        */
         switch (state) {
+
+            /**
+            * État initial : début de la ligne
+            */
             case START:
                 if (!isspace(c)) { // Début d'une commande ou argument
                     if (c == '"') { // Si on trouve un guillemet ouvrant
@@ -173,10 +190,15 @@ void parse_line(const char *line, ParsedCommand commands[], int *num_commands) {
                 }
                 break;
 
+            /*
+            * État de la commande : analyse du nom de la commande
+            */
             case COMMAND:
+                // Si on trouve un guiillemet ouvrant, on passe à l'état STATE_QUOTE
                 if (c == '"') {
                   state = STATE_QUOTE;
                   token_idx = 0;
+
                   } else if (isspace(c) || c == '\0' || c == ';' || c == '&' || c == '|') {
                     if (token_idx > 0) {
                         token[token_idx] = '\0';
@@ -204,7 +226,6 @@ void parse_line(const char *line, ParsedCommand commands[], int *num_commands) {
                         state = START;
                     } else if (c == '\0') {
                         commands[cmd_idx].args[arg_idx] = NULL;
-
                     } else {
                         state = ARGUMENT;
                     }
@@ -213,6 +234,9 @@ void parse_line(const char *line, ParsedCommand commands[], int *num_commands) {
                 }
                 break;
 
+            /**
+            * État de l'argument : analyse des arguments de la commande
+            */
             case ARGUMENT:
              if (isspace(c)) {
                continue;
@@ -251,6 +275,9 @@ void parse_line(const char *line, ParsedCommand commands[], int *num_commands) {
              }
              break;
 
+            /**
+            * État de guillemet : analyse des guillemets
+            */
             case STATE_QUOTE:
                 if (c == '"') {
                     token[token_idx] = '\0';
@@ -270,7 +297,6 @@ void parse_line(const char *line, ParsedCommand commands[], int *num_commands) {
                 break;
         }
     }
-
     if (cmd_idx >= 0 && commands[cmd_idx].command == NULL) {
         cmd_idx--; // Supprimer les commandes vides
     }
