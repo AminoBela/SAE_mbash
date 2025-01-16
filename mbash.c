@@ -1,3 +1,12 @@
+/**
+ *  MBASH - Mini shell en C
+ *  Auteur : Amin Belalia et Clement De Wasch
+ */
+
+/****************************************************
+* Inclusions
+*****************************************************/
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -7,11 +16,19 @@
 #include <ctype.h> // pour isspace
 #include <readline/readline.h>
 #include <readline/history.h>
+
+/****************************************************
+ * Constantes
+ ****************************************************/
+
 #define MAXLI 2048 // Taille maximale d'une ligne
 #define PATHMAX 4096
-
 #define MAX_TOKENS 128 // Nombre maximal de commandes
 #define MAX_TOKEN_LENGTH 256 // Taille maximale d'une commande
+
+/****************************************************
+ * Enumérations et structures
+ ****************************************************/
 
 /**
  *  États possibles pour l'analyseur de ligne de commande
@@ -67,17 +84,15 @@ int execute_command(ParsedCommand *cmd);
 void history();
 void save_history(ParsedCommand *cmd);
 void clear_history();
+void set_environment_variable(char *name, char *value);
+void unset_environment_variable(char *name);
+void print_environment_variables();
+char* expand_variable(const char *token);
+int handle_up_arrow(int count, int key);
 
-/**
- * Fonction pour gérer la flèche Haut
- * @param count
- * @param key
- * @return
- */
-int handle_up_arrow(int count, int key) {
-    printf("\nFlèche Haut détectée !\n");
-    return 0; // Retourner 0 pour continuer
-}
+/****************************************************
+ * Point d'entrée du programme
+ ****************************************************/
 
 /**
  * Fonction principale
@@ -144,6 +159,10 @@ int main() {
     free(input);
     return 0;
 }
+
+/****************************************************
+ * Fonctions pour l'analyse de la ligne de commande
+ ****************************************************/
 
 /**
  * Fonction pour séparer une ligne de commande en commandes et arguments
@@ -303,7 +322,9 @@ void parse_line(const char *line, ParsedCommand commands[], int *num_commands) {
     *num_commands = cmd_idx + 1;
 }
 
-
+/****************************************************
+ * Fonctions pour l'exécution des commandes
+ ****************************************************/
 
 /**
  * Fonction pour exécuter une commande
@@ -335,6 +356,42 @@ int execute_command(ParsedCommand *cmd) {
         return 0;
     }
 
+    // Commande interne pour définir une variable d'environnement
+    if (strcmp(cmd->command, "export") == 0) {
+        // Définir une variable d'environnement
+        if (cmd->args[1] == NULL) {
+            fprintf(stderr, "Erreur : nom de la variable non spécifié pour export\n");
+            return -1;
+        } else {
+          char *name = strtok(cmd->args[1], "=");
+            char *value = strtok(NULL, "=");
+            if (name && value) {
+                set_environment_variable(name, value);
+            } else {
+                fprintf(stderr, "Erreur : nom ou valeur non spécifié pour export\n");
+                return -1;
+            }
+          }
+        return 0;
+    }
+
+    // Commande interne pour supprimer une variable d'environnement
+    if (strcmp(cmd->command, "unset") == 0) {
+        // Supprimer une variable d'environnement
+        if (cmd->args[1] == NULL) {
+            fprintf(stderr, "Erreur : nom de la variable non spécifié pour unset\n");
+            return -1;
+        }
+        unset_environment_variable(cmd->args[1]);
+        return 0;
+    }
+
+    // Commande interne pour afficher les variables d'environnement
+    if (strcmp(cmd->command, "env") == 0) {
+        // Afficher les variables d'environnement
+        print_environment_variables();
+        return 0;
+    }
 
     // Commande history (voir cette fonction pour en savoir plus)
     if (strcmp(cmd->command, "history") == 0) {
@@ -362,7 +419,6 @@ int execute_command(ParsedCommand *cmd) {
       if (cmd->background) {
             // Ignorer le signal SIGINT (Ctrl+C) pour les commandes en arrière-plan
             signal(SIGINT, SIG_IGN);
-
         }
         // Processus enfant
         execvp(cmd->command, cmd->args);
@@ -385,6 +441,10 @@ int execute_command(ParsedCommand *cmd) {
         return -1;
   }
 }
+
+/****************************************************
+ * Fonctions pour les commandes internes
+ ****************************************************/
 
 /**
  * Fonction pour afficher l'historique des commandes
@@ -471,3 +531,60 @@ void clear_history() {
     printf("Historique effacé.\n");
 }
 
+/**
+ * Fonction pour définir une variable d'environnement
+ * @param name
+ * @param value
+ */
+void set_environment_variable(char *name, char *value) {
+    if (setenv(name, value, 1) != 0) {
+        perror("Erreur lors de la définition de la variable d'environnement");
+    }
+}
+
+/**
+ * Fonction pour supprimer une variable d'environnement
+ * @param name
+ */
+void unset_environment_variable(char *name) {
+    if (unsetenv(name) != 0) {
+        perror("Erreur lors de la suppression de la variable d'environnement");
+    }
+}
+
+/**
+ * Fonction pour afficher les variables d'environnement
+ */
+void print_environment_variables() {
+    extern char **environ;
+    for (char **env = environ; *env != NULL; env++) {
+        printf("%s\n", *env);
+    }
+}
+
+/**
+ * Fonction pour étendre une variable d'environnement
+ * @param token
+ * @return
+ */
+char* expand_variable(const char *token) {
+    if (token[0] == '$') {
+        const char *value = getenv(token + 1);
+        if (value != NULL) {
+            return strdup(value);
+        } else {
+            return strdup("");
+        }
+    return strdup(token);
+}
+
+/**
+* Fonction pour gérer la flèche Haut
+* @param count
+* @param key
+* @return
+*/
+int handle_up_arrow(int count, int key) {
+    printf("\nFlèche Haut détectée !\n");
+    return 0; // Retourner 0 pour continuer
+}
