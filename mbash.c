@@ -5,8 +5,9 @@
 #include <limits.h>
 #include <sys/wait.h> // pour waitpid et WEXITSTATUS
 #include <ctype.h> // pour isspace
-#define MAXLI 2048 // Taille maximale d'une ligne
 #include <readline/readline.h>
+#include <readline/history.h>
+#define MAXLI 2048 // Taille maximale d'une ligne
 #define PATHMAX 4096
 
 #define MAX_TOKENS 128 // Nombre maximal de commandes
