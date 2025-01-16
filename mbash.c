@@ -360,9 +360,9 @@ int execute_command(ParsedCommand *cmd) {
     // Si pid == 0, c'est le processus enfant qui exécute la commande
     if (pid == 0) {
       if (cmd->background) {
-        // redirection des sorties pour les commandes en arrière-plan
-        freopen("/dev/null", "w", stdout);
-        freopen("/dev/null", "w", stderr);
+            // Ignorer le signal SIGINT (Ctrl+C) pour les commandes en arrière-plan
+            signal(SIGINT, SIG_IGN);
+
         }
         // Processus enfant
         execvp(cmd->command, cmd->args);
