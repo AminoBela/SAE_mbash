@@ -7,3 +7,73 @@ echo helloecho  hello
 echo helloecho  hello 
 ls 
 -l 
+ls -l 
+echo "hola" 
+git pull 
+echo hola 
+git pull 
+clear 
+sleep 5 
+echo hello world 
+ls 
+ls 
+git pull 
+exit 
+echo hello world 
+echo $? 
+exit 
+git $? 
+echo $? 
+echo $PATH 
+clear 
+clear 
+ls 
+exit 
+firefox 
+clear 
+ls 
+ls -l 
+ls 
+ls 
+ls - 
+ls -l 
+ls -l 
+ls 
+clear 
+emacs mbash.c 
+clear 
+emacs automate.puml 
+clear 
+open implement.txt 
+ls *.c 
+emacs mbas.c 
+emacs mbash.c 
+ls 
+clear 
+echo $PATH 
+open implement.txt 
+ls 
+xterm 
+xterm 
+echo hola 
+ls 
+ls 
+ls 
+ls 
+ls 
+ls 
+ls 
+ls 
+ls t 
+ls t 
+ls t 
+ls 
+ls sort 
+sort 
+ls 
+sort test.c 
+sort test.c wc-l 
+sort test.c wc-l 
+open 
+[A[A[A[A[A[A[A[A 
+[A 

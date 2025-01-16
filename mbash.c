@@ -426,20 +426,3 @@ void clear_history() {
     printf("Historique effacé.\n");
 }
 
-void execute_with_path(char *command, char *args[]) {
-    char *path = getenv("PATH");
-    char *dir = strtok(path, ":");
-    char full_path[PATHMAX];
-
-    while (dir != NULL) {
-        snprintf(full_path, PATHMAX, "%s/%s", dir, command);
-        if (access(full_path, X_OK) == 0) {
-            execv(full_path, args);
-            return;
-        }
-        dir = strtok(NULL, ":");
-    }
-    fprintf(stderr, "Commande introuvable : %s\n", command);
-    exit(EXIT_FAILURE);
-
-}

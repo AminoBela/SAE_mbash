@@ -6,16 +6,30 @@ Mardi:
 - Debut du projet, implementation de execv, automate pour les operateurs
 - Implementation de la commande history avec history -c pour effacer cet historique.
 - Commande exit
+- cd qui marche
+-pwd qui marche
+
+Mercredi
+
+-dessine l'automate (a corriger)
+-processus en arriere plan qui marche (ls &)
+-prise en compte des elements entre guillemets
+-Repertoire courant debut du prompt
+-Résolution de beugs
+-sortie avec ctrl+d
+-sigint (ignorance de ctrl+c dans proc parent)
+
+
+
+Jeudi
+
 
 
 Bucket des choses a faire:
 
+fleche haut pour commande d'avant (en production)
 Completion automatique
 Aliases de commandes
-Operateurs comme les pipes "|" et redirections ">" ">>" 
-<<<<<<< HEAD
-Apparence du propt selon user et repertoire courant
+Operateurs comme les pipes "|" et redirections ">" ">>"
 VARIABLES D'ENVIRONNEMENT
-=======
-Apparence du propt selon user et repertoire courant
->>>>>>> 3499db685b2f41cd1f6ea0f45c7395ab9c6d9470
+SUpport de * (exemple ls *.c)
