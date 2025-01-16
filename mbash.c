@@ -94,10 +94,10 @@ int main() {
 
         printf("%s > ", getcwd(cwd, sizeof(cwd)));
         //printf("%s >"/*, getcwd(cwd, sizeof(cwd))*/);
-        line = readline("> ");
+        input = readline("> ");
 
         // Lire une ligne de commande
-        if (line == NULL) {
+        if (input == NULL) {
             break;
         }
 
