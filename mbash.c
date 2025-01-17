@@ -90,10 +90,11 @@ void unset_environment_variable(char *name);
 void print_environment_variables();
 char* expand_variable(const char *token);
 int handle_up_arrow(int count, int key);
+char* read_line_from_file(const char* filename, int target_line);
 
 int handle_up_arrow(int count, int key) {
     int i = 1;
-    for (i = 1; i <= ; i++) {
+    //for (i = 1; i <= ; i++) {
     char* line = read_line_from_file("history.txt", i);
     return 0; // Retourner 0 pour continuer
 }
@@ -583,44 +584,40 @@ char* expand_variable(const char *token) {
         } else {
             return strdup("");
         }
-    return strdup(token);
-}
-
-/**
-* Fonction pour gérer la flèche Haut
-* @param count
-* @param key
-* @return
-*/
-int handle_up_arrow(int count, int key) {
-    printf("\nFlèche Haut détectée !\n");
-    return 0; // Retourner 0 pour continuer
-}
-char* read_line_from_file(const char* filename, int target_line) {
-    FILE* file = fopen(filename, "r");
-    if (file == NULL) {
-        perror("Erreur d'ouverture du fichier");
-        return NULL;
+        return strdup(token);
     }
+}
+    /**
+    * Fonction pour gérer la flèche Haut
+    * @param count
+    * @param key
+    * @return
+    */
+    char* read_line_from_file(const char* filename, int target_line) {
+        FILE* file = fopen(filename, "r");
+        if (file == NULL) {
+            perror("Erreur d'ouverture du fichier");
+            return NULL;
+        }
 
-    char* line = malloc(MAX_LINE_LENGTH);
-    if (line == NULL) {
-        perror("Erreur d'allocation de mémoire");
+        char* line = malloc(MAX_LINE_LENGTH);
+        if (line == NULL) {
+            perror("Erreur d'allocation de mémoire");
+            fclose(file);
+            return NULL;
+        }
+
+        int current_line = 1; // Compteur de ligne
+        while (fgets(line, MAX_LINE_LENGTH, file) != NULL) {
+            if (current_line == target_line) {
+                fclose(file);
+                return line; // Retourner la ligne trouvée
+            }
+            current_line++;
+        }
+
+        // Si la ligne n'existe pas
+        free(line);
         fclose(file);
         return NULL;
-    }
-
-    int current_line = 1; // Compteur de ligne
-    while (fgets(line, MAX_LINE_LENGTH, file) != NULL) {
-        if (current_line == target_line) {
-            fclose(file);
-            return line; // Retourner la ligne trouvée
-        }
-        current_line++;
-    }
-
-    // Si la ligne n'existe pas
-    free(line);
-    fclose(file);
-    return NULL;
 }
