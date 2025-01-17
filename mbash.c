@@ -90,6 +90,7 @@ void unset_environment_variable(char *name);
 void print_environment_variables();
 char* expand_variable(const char *token);
 int handle_up_arrow(int count, int key);
+void expand_arguments(ParsedCommand *cmd);
 char* read_line_from_file(const char* filename, int target_line);
 
 int handle_up_arrow(int count, int key) {
@@ -128,6 +129,7 @@ int main() {
 
         //Lire une ligne de commande
         if (input == NULL) {
+	    printf("\nAu revoir !\n");
             break;
         }
 
@@ -270,6 +272,9 @@ void parse_line(const char *line, ParsedCommand commands[], int *num_commands) {
              } else if (c == '"') {
                  state = STATE_QUOTE;
                  token_idx = 0;
+	     } else if (c == '$') {
+	       token[token_idx++] = c; // Ajoute le '$' pour expansion
+	       state = ARGUMENT;
              } else if (c == '\0' || c == ';' || c == '&' || c == '|') {
                  if (token_idx > 0) {
                     token[token_idx] = '\0';
@@ -363,6 +368,9 @@ int execute_command(ParsedCommand *cmd) {
         }
         return 0;
     }
+
+    expand_arguments(cmd);
+
 
     // Commande interne pour définir une variable d'environnement
     if (strcmp(cmd->command, "export") == 0) {
@@ -619,4 +627,20 @@ char* expand_variable(const char *token) {
         free(line);
         fclose(file);
         return NULL;
+}
+
+void expand_arguments(ParsedCommand *cmd) {
+    for (int i = 0; cmd->args[i] != NULL; i++) {
+        if (cmd->args[i][0] == '$') {
+            char *expanded = getenv(cmd->args[i] + 1); // Ignorer le '$'
+            if (expanded) {
+                free(cmd->args[i]); // Libérer l'ancien argument
+                cmd->args[i] = strdup(expanded); // Remplacer par la valeur
+            } else {
+                // Remplacer par une chaîne vide si la variable n'existe pas
+                free(cmd->args[i]);
+                cmd->args[i] = strdup("");
+            }
+        }
+    }
 }
