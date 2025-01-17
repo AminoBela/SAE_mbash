@@ -108,7 +108,7 @@ int handle_up_arrow(int count, int key) {
 
     int j = 0;
 
-    for (j = 0, j <= i, j++) {
+    for (j = 0, j < i, j++;;) {
         char* line = read_line_from_file("history.txt", j);
         printf("%s\n", line);
     }
