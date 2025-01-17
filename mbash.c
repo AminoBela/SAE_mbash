@@ -94,11 +94,28 @@ void expand_arguments(ParsedCommand *cmd);
 char* read_line_from_file(const char* filename, int target_line);
 
 int handle_up_arrow(int count, int key) {
-    int i = 1;
-    //for (i = 1; i <= ; i++) {
-    char* line = read_line_from_file("history.txt", i);
+
+    int i = 0;
+    FILE * file = fopen("history.txt", "r");
+    char ch;
+
+    // Récupère le nombre de ligne dans l'historique
+    while ((ch = fgetc(file)) != EOF) {
+        if (ch == '\n') {
+            i++;
+        }
+    }
+
+    int j = 0;
+
+    for (j = 0, j <= i, j++) {
+        char* line = read_line_from_file("history.txt", j);
+        printf("%s\n", line);
+    }
+
     return 0; // Retourner 0 pour continuer
 }
+
 /****************************************************
  * Point d'entrée du programme
  ****************************************************/
