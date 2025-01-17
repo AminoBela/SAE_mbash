@@ -123,13 +123,12 @@ int main() {
      */
     while (1) {
 
-        printf("%s > ", getcwd(cwd, sizeof(cwd)));
+        //printf("%s > ", getcwd(cwd, sizeof(cwd)));
         //printf("%s >"/*, getcwd(cwd, sizeof(cwd))*/);
         input = readline("> ");
 
         //Lire une ligne de commande
         if (input == NULL) {
-	    printf("\nAu revoir !\n");
             break;
         }
 
