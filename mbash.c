@@ -99,6 +99,7 @@ int main() {
 
         // Lire une ligne de commande
         if (input == NULL) {
+	    printf("\nAu revoir !\n");
             break;
         }
 
