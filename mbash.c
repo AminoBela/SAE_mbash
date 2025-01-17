@@ -124,17 +124,17 @@ int main() {
 
         printf("%s > ", getcwd(cwd, sizeof(cwd)));
         //printf("%s >"/*, getcwd(cwd, sizeof(cwd))*/);
-        //input = readline("> ");
-
-        /* Lire une ligne de commande
-        if (input == NULL) {
-            break;
-        }*/
+        input = readline("> ");
 
         //Lire une ligne de commande
+        if (input == NULL) {
+            break;
+        }
+
+        /*Lire une ligne de commande
         if (fgets(line, sizeof(line), stdin) == NULL) {
             break; // Fin de fichier (Ctrl+D)
-        }//
+        }*/
 
         line[strcspn(line, "\n")] = '\0'; // Supprime le \n final
 
@@ -143,7 +143,7 @@ int main() {
         memset(commands, 0, sizeof(commands));
 
         // Analyse de la ligne
-        parse_line(line, commands, &num_commands);
+        parse_line(input, commands, &num_commands);
 
         // Exécution des commandes
         int last_status = 0;
