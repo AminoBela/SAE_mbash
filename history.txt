@@ -77,3 +77,29 @@ sort test.c wc-l
 open 
 [A[A[A[A[A[A[A[A 
 [A 
+ls 
+$PATH 
+echo $PATH 
+clear 
+export VAR=2 
+echo $VAR 
+ENV 
+env 
+echo VAR 
+clear 
+export VAR=33 
+echo $VAR 
+[A 
+clear 
+export VAR=33 
+echo $VAR 
+ls -l 
+pwd 
+pwd 
+emacs mbash.c 
+emacs mbash.c 
+exit 
+export VAR=33 
+echo $VAR 
+./mbash 
+exit* 
