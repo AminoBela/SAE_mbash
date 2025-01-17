@@ -89,32 +89,8 @@ void set_environment_variable(char *name, char *value);
 void unset_environment_variable(char *name);
 void print_environment_variables();
 char* expand_variable(const char *token);
-int handle_up_arrow(int count, int key);
 void expand_arguments(ParsedCommand *cmd);
-char* read_line_from_file(const char* filename, int target_line);
 
-int handle_up_arrow(int count, int key) {
-
-    int i = 0;
-    FILE * file = fopen("history.txt", "r");
-    char ch;
-
-    // Récupère le nombre de ligne dans l'historique
-    while ((ch = fgetc(file)) != EOF) {
-        if (ch == '\n') {
-            i++;
-        }
-    }
-
-    int j = 0;
-
-    for (j = 0, j < i, j++;;) {
-        char* line = read_line_from_file("history.txt", j);
-        printf("%s\n", line);
-    }
-
-    return 0; // Retourner 0 pour continuer
-}
 
 /****************************************************
  * Point d'entrée du programme
@@ -133,28 +109,17 @@ int main() {
 
     signal(SIGINT, SIG_IGN); // Ignorer le signal SIGINT (Ctrl+C)
 
-    rl_bind_keyseq("\\e[A", handle_up_arrow); // Lier la flèche Haut à la fonction handle_up_arrow
-
     /**
      * Boucle principale, lit une ligne de commande à la fois
      */
     while (1) {
-
-        //printf("%s > ", getcwd(cwd, sizeof(cwd)));
-        //printf("%s >"/*, getcwd(cwd, sizeof(cwd))*/);
-        input = readline("> ");
+        // Afficher le répertoire courant
+        input = readline(getcwd(cwd, sizeof(cwd)), "> ");
 
         //Lire une ligne de commande
         if (input == NULL) {
             break;
         }
-
-        /*Lire une ligne de commande
-        if (fgets(line, sizeof(line), stdin) == NULL) {
-            break; // Fin de fichier (Ctrl+D)
-        }*/
-
-        line[strcspn(line, "\n")] = '\0'; // Supprime le \n final
 
         // Réinitialisation
         num_commands = 0;
@@ -610,41 +575,11 @@ char* expand_variable(const char *token) {
         return strdup(token);
     }
 }
-    /**
-    * Fonction pour gérer la flèche Haut
-    * @param count
-    * @param key
-    * @return
-    */
-    char* read_line_from_file(const char* filename, int target_line) {
-        FILE* file = fopen(filename, "r");
-        if (file == NULL) {
-            perror("Erreur d'ouverture du fichier");
-            return NULL;
-        }
 
-        char* line = malloc(MAX_LINE_LENGTH);
-        if (line == NULL) {
-            perror("Erreur d'allocation de mémoire");
-            fclose(file);
-            return NULL;
-        }
-
-        int current_line = 1; // Compteur de ligne
-        while (fgets(line, MAX_LINE_LENGTH, file) != NULL) {
-            if (current_line == target_line) {
-                fclose(file);
-                return line; // Retourner la ligne trouvée
-            }
-            current_line++;
-        }
-
-        // Si la ligne n'existe pas
-        free(line);
-        fclose(file);
-        return NULL;
-}
-
+/**
+ * Fonction pour étendre les arguments de la commande
+ * @param cmd
+ */
 void expand_arguments(ParsedCommand *cmd) {
     for (int i = 0; cmd->args[i] != NULL; i++) {
         if (cmd->args[i][0] == '$') {
