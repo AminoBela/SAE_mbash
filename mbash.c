@@ -114,7 +114,8 @@ int main() {
      */
     while (1) {
         // Afficher le répertoire courant
-        input = readline(getcwd(cwd, sizeof(cwd)), "> ");
+        printf("%s", getcwd(cwd, sizeof(cwd)));
+        input = readline("> ");
 
         //Lire une ligne de commande
         if (input == NULL) {
