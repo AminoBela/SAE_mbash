@@ -1,0 +1,104 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{geometry}
+\usepackage{hyperref}
+\geometry{a4paper, margin=1in}
+\title{Rapport - SAE 3.03 : R\'eseau et Application Serveur}
+\author{Amin Belalia Bendjafar et Cl\'ement De Wasch}
+\date{18 Janvier 2025}
+
+\begin{document}
+
+\maketitle
+
+\tableofcontents
+
+\section{Introduction}
+
+Ce rapport pr\'esente les travaux r\'ealis\'es dans le cadre de la SAE 3.03, \`a savoir le d\'eveloppement de \texttt{mbash}, une version miniature de Bash, ainsi que la mise en place d'un serveur Debian pour distribuer le programme sous forme de package. Ces deux parties permettent d'explorer des concepts essentiels li\'es \`a la programmation syst\`eme et \`a la gestion de d\'ep\^ots logiciels.
+
+\section{Partie 1 : \texttt{mbash}}
+
+\subsection{Objectifs}
+
+L'objectif \`etait de cr\'eer une version basique mais fonctionnelle de Bash, nomm\'ee \texttt{mbash}, en respectant les contraintes suivantes :
+\begin{itemize}
+    \item Impl\'ementer des commandes int\'egr\'ees comme \texttt{cd}, \texttt{pwd}, et \texttt{exit}.
+    \item Permettre l'ex\'ecution de commandes en respectant la variable \texttt{PATH}.
+    \item G\'erer les op\'erateurs logiques \texttt{\&\&}, \texttt{||}, et le caract\`ere \texttt{;}.
+    \item Supporter l'ex\'ecution en arri\`ere-plan via le caract\`ere \texttt{\&}.
+\end{itemize}
+
+\subsection{Fonctionnalit\'es Impl\'ement\'ees}
+
+\texttt{mbash} inclut les fonctionnalit\'es suivantes :
+\begin{itemize}
+    \item \textbf{Commande \texttt{cd}} : Permet de changer de r\'epertoire. L'impl\'ementation v\'erifie si le chemin est valide avant d'effectuer le changement de r\'epertoire. En cas d'erreur, un message est affich\'e.
+    \item \textbf{Commande \texttt{pwd}} : Affiche le r\'epertoire courant en utilisant \texttt{getcwd} pour obtenir le chemin absolu du r\'epertoire de travail.
+    \item \textbf{Historique} : Les commandes ex\'ecut\'ees sont sauvegard\'ees dans un fichier texte appel\'e \texttt{history.txt}. L'utilisateur peut afficher l'historique avec \texttt{history} ou le r\'eset avec \texttt{history -c}. Cela est g\'er\'e via des fonctions qui lisent, \`ecrivent ou nettoient le fichier d'historique.
+    \item \textbf{Op\'erateurs logiques} : \texttt{\&\&}, \texttt{||}, et \texttt{;} permettent de cha\^iner plusieurs commandes. Par exemple :
+    \begin{itemize}
+        \item Une commande suivant \texttt{\&\&} ne s'ex\'ecute que si la commande pr\'ec\'edente r\'eussit.
+        \item Une commande suivant \texttt{||} s'ex\'ecute seulement si la commande pr\'ec\'edente \''echoue.
+        \item Les commandes s\'epar\'ees par \texttt{;} sont ex\'ecut\'ees en s\'equence, ind\'ependamment de leur succ\`es ou \''echec.
+    \end{itemize}
+    \item \textbf{Ex\'ecution en arri\`ere-plan} : L'utilisateur peut ex\'ecuter une commande en arri\`ere-plan en ajoutant \texttt{\&} \`a la fin. Les processus sont d\'etach\'es et les messages de notification de leur cr\'eation sont affich\'es avec leurs PID.
+    \item \textbf{Gestion des guillemets} : Les arguments contenant des espaces ou des caract\`eres sp\'eciaux peuvent \^etre pass\'es en utilisant des guillemets, gr\^ace \`a un \''etat sp\'ecifique \texttt{STATE\_QUOTE} dans l'automate.
+    \item \textbf{Signal SIGINT} : Ignorer \texttt{Ctrl+C} dans le processus parent pour emp\^echer une interruption accidentelle du shell. Cela est fait via \texttt{signal(SIGINT, SIG\_IGN)}.
+    \item \textbf{Sortie avec \texttt{Ctrl+D}} : Permet de quitter \texttt{mbash} proprement en fermant tous les fichiers ouverts et en lib\'erant la m\'emoire allou\'ee.
+\end{itemize}
+
+\subsection{Analyse et Impl\'ementation Technique}
+
+L'analyse de la ligne de commande est r\'ealis\'ee \`a l'aide d'un \textbf{automate \`a \''etats finis}. Voici les principaux \''etats utilis\'es :
+\begin{itemize}
+    \item \textbf{START} : D\'ebut de l'analyse. Chaque caract\`ere est analys\'e pour d\'eterminer le d\'ebut d'une commande ou d'un argument.
+    \item \textbf{COMMAND} : Analyse du nom de la commande. Lorsque l'espace ou un op\'erateur est rencontr\'e, l'analyse de la commande se termine.
+    \item \textbf{ARGUMENT} : Analyse des arguments de la commande. Chaque argument est s\'epar\'e par un espace ou un op\'erateur.
+    \item \textbf{STATE\_QUOTE} : Gestion des \''el\'ements entre guillemets. Les caract\`eres sp\'eciaux dans les guillemets sont ignor\'es jusqu'\`a la fermeture des guillemets.
+    \item \textbf{OPERATOR} : Gestion des op\'erateurs logiques comme \texttt{\&\&} et \texttt{||}. Cela inclut aussi la gestion des s\'equences de commandes \texttt{;}. L'\''etat suivant d\'epend du type d'op\'erateur rencontr\'e.
+    \item \textbf{END} : Fin de l'analyse. Tous les arguments sont enregistr\'es et pr\'epar\'es pour l'ex\'ecution.
+\end{itemize}
+
+Chaque caract\`ere de la ligne est trait\'e s\'equentiellement pour d\'eterminer l'\''etat suivant de l'automate. Par exemple :
+\begin{itemize}
+    \item Si un espace est rencontr\'e dans l'\''etat \texttt{COMMAND}, cela marque la fin de la commande et le passage \`a \texttt{ARGUMENT}.
+    \item Les guillemets ouvrants ou fermants sont g\'er\'es via l'\''etat \texttt{STATE\_QUOTE} pour permettre des arguments contenant des espaces.
+    \item Les op\'erateurs comme \texttt{\&\&} ou \texttt{||} redirigent l'automate vers l'\''etat \texttt{OPERATOR}.
+\end{itemize}
+
+Pour l'ex\'ecution des commandes, nous avons utilis\'e \texttt{execve}, qui remplace le processus courant par un nouveau processus ex\'ecutant la commande souhait\'ee. Cette approche garantit une ex\'ecution efficace tout en laissant la gestion des erreurs possible, comme l'affichage d'un message si la commande est introuvable.
+
+\section{Partie 2 : Serveur Debian}
+
+\subsection{Objectifs}
+
+L'objectif \`etait de permettre l'installation de \texttt{mbash} via la commande :
+\begin{verbatim}
+sudo apt install mbash
+\end{verbatim}
+
+Pour cela, un d\'ep\^ot Debian a \`et\'e configur\'e en respectant les \''etapes suivantes :
+\begin{itemize}
+    \item Cr\'eation d'un package Debian contenant \texttt{mbash}.
+    \item Mise en place d'un d\'ep\^ot accessible via HTTP.
+    \item Signature des packages avec une cl\'e GPG.
+    \item Configuration d'un client pour utiliser le d\'ep\^ot.
+\end{itemize}
+
+\subsection{R\'ealisation}
+
+\begin{itemize}
+    \item \textbf{Cr\'eation du package} : \texttt{mbash} a \`et\'e empaquet\'e avec \texttt{dpkg}.
+    \item \textbf{Serveur de d\'ep\^ot} : Mise en place avec \texttt{reprepro} et \texttt{apache2}.
+    \item \textbf{Cycle de vie} : Tests de l'installation et des mises \`a jour (
+\texttt{apt update} et \texttt{apt upgrade}).
+\end{itemize}
+
+\section{Conclusion}
+
+Le projet SAE 3.03 a permis de r\'ealiser une version fonctionnelle de Bash avec des fonctionnalit\'es cl\'es, ainsi que de configurer un d\'ep\^ot Debian. L'utilisation d'un automate pour analyser la ligne de commande a \`et\'e centrale pour garantir une syntaxe robuste et extensible. L'utilisation de \texttt{execve} a permis une ex\'ecution directe et efficace des commandes, renfor\c{c}ant la gestion des processus. Ce travail a renforc\'e les comp\'etences en programmation syst\`eme et en gestion de d\'ep\^ots logiciels.
+
+\end{document}
