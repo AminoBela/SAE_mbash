@@ -9,7 +9,7 @@
 #include <readline/history.h>
 #define MAXLI 2048 // Taille maximale d'une ligne
 #define PATHMAX 4096
-
+#define MAX_LINE_LENGTH 1024 // Taille maximale d'une ligne
 #define MAX_TOKENS 128 // Nombre maximal de commandes
 #define MAX_TOKEN_LENGTH 256 // Taille maximale d'une commande
 
@@ -69,7 +69,9 @@ void save_history(ParsedCommand *cmd);
 void clear_history();
 
 int handle_up_arrow(int count, int key) {
-    printf("\nFlèche Haut détectée !\n");
+    int i = 1;
+    for (i = 1; i <= ; i++) {
+    char* line = read_line_from_file("history.txt", i);
     return 0; // Retourner 0 pour continuer
 }
 
@@ -102,10 +104,10 @@ int main() {
             break;
         }
 
-        /* Lire une ligne de commande
+        //Lire une ligne de commande
         if (fgets(line, sizeof(line), stdin) == NULL) {
             break; // Fin de fichier (Ctrl+D)
-        }*/
+        }//
 
         line[strcspn(line, "\n")] = '\0'; // Supprime le \n final
 
@@ -445,3 +447,31 @@ void clear_history() {
     printf("Historique effacé.\n");
 }
 
+char* read_line_from_file(const char* filename, int target_line) {
+    FILE* file = fopen(filename, "r");
+    if (file == NULL) {
+        perror("Erreur d'ouverture du fichier");
+        return NULL;
+    }
+
+    char* line = malloc(MAX_LINE_LENGTH);
+    if (line == NULL) {
+        perror("Erreur d'allocation de mémoire");
+        fclose(file);
+        return NULL;
+    }
+
+    int current_line = 1; // Compteur de ligne
+    while (fgets(line, MAX_LINE_LENGTH, file) != NULL) {
+        if (current_line == target_line) {
+            fclose(file);
+            return line; // Retourner la ligne trouvée
+        }
+        current_line++;
+    }
+
+    // Si la ligne n'existe pas
+    free(line);
+    fclose(file);
+    return NULL;
+}
