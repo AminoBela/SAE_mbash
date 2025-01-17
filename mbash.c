@@ -124,12 +124,12 @@ int main() {
 
         printf("%s > ", getcwd(cwd, sizeof(cwd)));
         //printf("%s >"/*, getcwd(cwd, sizeof(cwd))*/);
-        input = readline("> ");
+        //input = readline("> ");
 
-        // Lire une ligne de commande
+        /* Lire une ligne de commande
         if (input == NULL) {
             break;
-        }
+        }*/
 
         //Lire une ligne de commande
         if (fgets(line, sizeof(line), stdin) == NULL) {
